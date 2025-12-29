@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AR Video Player</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        overflow: hidden;
+      }
+
+      /* Ocultar el UI de escaneo de MindAR */
+      .mindar-ui-overlay {
+        display: none !important;
+      }
+
+      .mindar-ui-scanning {
+        display: none !important;
+      }
+
+      #header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        z-index: 1000;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+      }
+
+      #reload-btn {
+        position: fixed;
+        top: 70px;
+        left: 10px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        color: white;
+        padding: 10px 18px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.3s;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        z-index: 1000;
+      }
+
+      #reload-btn:hover {
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        transform: scale(1.05);
+        border-color: rgba(255, 255, 255, 0.8);
+        box-shadow: 0 6px 18px rgba(102, 126, 234, 0.6);
+      }
+
+      #reload-btn:active {
+        transform: scale(0.95);
+      }
+
+      #video-title {
+        color: white;
+        font-size: 18px;
+        font-weight: 600;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #menu-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        transition: transform 0.3s;
+      }
+
+      #menu-btn:hover {
+        transform: scale(1.1);
+      }
+
+      .menu-line {
+        width: 25px;
+        height: 3px;
+        background: white;
+        border-radius: 2px;
+        transition: all 0.3s;
+      }
+
+      #menu-btn.active .menu-line:nth-child(1) {
+        transform: rotate(45deg) translate(6px, 6px);
+      }
+
+      #menu-btn.active .menu-line:nth-child(2) {
+        opacity: 0;
+      }
+
+      #menu-btn.active .menu-line:nth-child(3) {
+        transform: rotate(-45deg) translate(6px, -6px);
+      }
+
+      #sidebar {
+        position: fixed;
+        top: 60px;
+        right: -300px;
+        width: 300px;
+        height: calc(100vh - 60px);
+        background: white;
+        box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+        transition: right 0.3s ease;
+        z-index: 999;
+        overflow-y: auto;
+      }
+
+      #sidebar.open {
+        right: 0;
+      }
+
+      .video-item {
+        padding: 15px 20px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .video-item:hover {
+        background: #f5f5f5;
+      }
+
+      .video-item.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      /* Estilo especial para el video publicitario */
+      .video-item.publicidad {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        border-left: 4px solid #ff6b6b;
+      }
+
+      .video-item.publicidad:hover {
+        background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+      }
+
+      .video-item.publicidad.active {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+      }
+
+      .video-item-title {
+        font-weight: 600;
+        margin-bottom: 5px;
+      }
+
+      /* Badge de publicidad */
+      .ad-badge {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.3);
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: bold;
+        margin-left: 8px;
+        text-transform: uppercase;
+      }
+
+      .video-item-url {
+        font-size: 12px;
+        color: #666;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .video-item.active .video-item-url {
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .video-item.publicidad .video-item-url {
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      #play-pause-btn {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        z-index: 1000;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      #play-pause-btn:hover {
+        transform: translateX(-50%) scale(1.1);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+      }
+
+      #play-pause-btn:active {
+        transform: translateX(-50%) scale(0.95);
+      }
+
+      #loading {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 18px;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 20px 40px;
+        border-radius: 10px;
+        z-index: 999;
+      }
+
+      .loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 10px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .a-enter-vr-button {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="header">
+      <div id="video-title">Cargando...</div>
+      <button id="menu-btn">
+        <div class="menu-line"></div>
+        <div class="menu-line"></div>
+        <div class="menu-line"></div>
+      </button>
+    </div>
+
+    <button id="reload-btn">
+      <span>🔄</span>
+      <span>Reload</span>
+    </button>
+
+    <div id="sidebar">
+      <div id="video-list"></div>
+    </div>
+
+    <button id="play-pause-btn">▶</button>
+
+    <div id="loading">
+      <div class="loader"></div>
+      <div>Cargando videos...</div>
+    </div>
+
+    <a-scene
+      mindar-image="imageTargetSrc: capibara.mind; autoStart: false; filterMinCF: 0.0001; filterBeta: 0.01; uiScanning: none; uiLoading: no;"
+      color-space="sRGB"
+      renderer="colorManagement: true, physicallyCorrectLights"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false"
+    >
+      <a-assets>
+        <video
+          id="ar-video"
+          crossorigin="anonymous"
+          playsinline
+          webkit-playsinline
+        ></video>
+        <img id="poster-image" src="myimage.png" crossorigin="anonymous">
+      </a-assets>
+
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+      <a-entity mindar-image-target="targetIndex: 0">
+        <!-- ✅ IMAGEN DINÁMICA (ahora usa a-image como en el segundo archivo) -->
+        <a-image 
+          id="poster-img" 
+          src="#poster-image" 
+          position="0 0 0"
+          scale="1 1 1"
+        ></a-image>
+
+        <!-- Anillo exterior (más transparente) -->
+        <a-ring
+          id="ring-outer"
+          radius-inner="0.7"
+          radius-outer="0.85"
+          position="0 0 0"
+          rotation="0 0 0"
+          scale="0 0 0"
+          material="color: #FFD700; opacity: 0.3; side: double; transparent: true"
+        >
+        </a-ring>
+
+        <!-- Anillo interior (menos transparente) -->
+        <a-ring
+          id="ring-inner"
+          radius-inner="0.7"
+          radius-outer="0.8"
+          position="0 0 0"
+          rotation="0 0 0"
+          scale="0 0 0"
+          material="color: #FFD700; opacity: 0.6; side: double; transparent: true"
+        >
+        </a-ring>
+
+        <!--Anillos rojos-->
+        <!-- Anillo exterior (más transparente) -->
+        <a-ring
+          id="ring-outer-red"
+          radius-inner="0.9"
+          radius-outer="1.1"
+          position="0 0 0"
+          rotation="0 0 0"
+          scale="0 0 0"
+          material="color: #FF0000; opacity: 0.3; side: double; transparent: true"
+        >
+        </a-ring>
+
+        <!-- Anillo interior (menos transparente) -->
+        <a-ring
+          id="ring-inner-red"
+          radius-inner="0.9"
+          radius-outer="1"
+          position="0 0 0"
+          rotation="0 0 0"
+          scale="0 0 0"
+          material="color: #FF0000; opacity: 0.6; side: double; transparent: true"
+        >
+        </a-ring>
+
+        <!-- Círculo del video -->
+        <a-circle
+          id="video-circle"
+          src="#ar-video"
+          radius="0.7"
+          position="0 0 0"
+          rotation="0 0 0"
+          scale="0 0 0"
+          material="shader: flat; side: double"
+        >
+        </a-circle>
+      </a-entity>
+    </a-scene>
+
+    <script>
+      const SUPABASE_URL = "https://gjnekbzkminxdfqqvuyo.supabase.co";
+      const SUPABASE_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqbmVrYnprbWlueGRmcXF2dXlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwMzU3MzAsImV4cCI6MjA4MjYxMTczMH0._5OT0vM6NAClqC0o1AbSdOkd_t63Pm8EQmcj_LnA1BY";
+
+      // Nombre del video publicitario
+      const VIDEO_PUBLICITARIO = "publicidad.mp4";
+
+      // Verificar que supabase esté disponible
+      if (typeof supabase === "undefined") {
+        console.error("Supabase no está cargado");
+        document.querySelector("#loading").innerHTML =
+          "<div>Error: Supabase no cargó correctamente</div>";
+      }
+
+      const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      let videos = [];
+      let currentVideoIndex = 0;
+      let isPlaying = false;
+
+      const videoElement = document.querySelector("#ar-video");
+      const playPauseBtn = document.querySelector("#play-pause-btn");
+      const videoTitle = document.querySelector("#video-title");
+      const menuBtn = document.querySelector("#menu-btn");
+      const sidebar = document.querySelector("#sidebar");
+      const videoList = document.querySelector("#video-list");
+      const loading = document.querySelector("#loading");
+      const sceneEl = document.querySelector("a-scene");
+      let videoCircle = null;
+      let posterImg = null; // ✅ Cambiado de posterCircle a posterImg
+      let ringInner = null;
+      let ringOuter = null;
+      let ringInnerRed = null;
+      let ringOuterRed = null;
+      let markerDetected = false;
+
+      // Esperar a que la escena esté lista para obtener los elementos
+      sceneEl.addEventListener("loaded", () => {
+        videoCircle = document.querySelector("#video-circle");
+        posterImg = document.querySelector("#poster-img"); // ✅ Obtener la imagen
+        ringInner = document.querySelector("#ring-inner");
+        ringOuter = document.querySelector("#ring-outer");
+        ringInnerRed = document.querySelector("#ring-inner-red");
+        ringOuterRed = document.querySelector("#ring-outer-red");
+
+        // Detectar cuando se encuentra el marcador
+        const target = document.querySelector("[mindar-image-target]");
+        target.addEventListener("targetFound", () => {
+          console.log("✅ Marcador detectado");
+          markerDetected = true;
+          showPoster();
+        });
+
+        target.addEventListener("targetLost", () => {
+          console.log("❌ Marcador perdido");
+          markerDetected = false;
+        });
+      });
+
+      // ✅ Mostrar imagen con animación
+      function showPoster() {
+        if (posterImg && !isPlaying) {
+          posterImg.setAttribute("animation", {
+            property: "scale",
+            from: "0 0 0",
+            to: "1 1 1",
+            dur: 500,
+            easing: "easeInOutQuad",
+          });
+        }
+      }
+
+      // ✅ Ocultar imagen con animación
+      function hidePoster() {
+        if (posterImg) {
+          posterImg.setAttribute("animation", {
+            property: "scale",
+            from: "1 1 1",
+            to: "0 0 0",
+            dur: 500,
+            easing: "easeInOutQuad",
+          });
+        }
+      }
+
+      // Cargar videos desde Supabase
+      async function loadVideos() {
+        try {
+          console.log("Intentando cargar videos...");
+          console.log("Supabase Client:", supabaseClient);
+
+          const { data, error } = await supabaseClient.storage
+            .from("videos")
+            .list("", {
+              limit: 100,
+              sortBy: { column: "name", order: "asc" },
+            });
+
+          console.log("Respuesta de Supabase:", { data, error });
+
+          if (error) {
+            console.error("Error:", error);
+            loading.innerHTML = `
+              <div>Error: ${error.message}</div>
+              <div style="margin-top: 10px; font-size: 14px;">
+                Verifica que el bucket 'videos' existe y es público
+              </div>
+            `;
+            videoTitle.textContent = "Error al cargar videos";
+            return;
+          }
+
+          if (!data || data.length === 0) {
+            loading.innerHTML = `
+              <div>No hay archivos en el bucket</div>
+              <div style="margin-top: 10px; font-size: 14px;">
+                Sube videos al bucket 'videos' en Supabase
+              </div>
+            `;
+            videoTitle.textContent = "No hay videos";
+            return;
+          }
+
+          // Separar videos normales y video publicitario
+          const videosNormales = [];
+          let videoPublicitario = null;
+
+          data.forEach((file) => {
+            if (file.name && file.name.match(/\.(mp4|webm|ogg)$/i)) {
+              const videoData = {
+                name: file.name.replace(/\.[^/.]+$/, ""),
+                url: supabaseClient.storage
+                  .from("videos")
+                  .getPublicUrl(file.name).data.publicUrl,
+                esPublicidad: file.name === VIDEO_PUBLICITARIO,
+              };
+
+              if (file.name === VIDEO_PUBLICITARIO) {
+                videoPublicitario = videoData;
+              } else {
+                videosNormales.push(videoData);
+              }
+            }
+          });
+
+          // Combinar videos normales + video publicitario al final
+          videos = videoPublicitario
+            ? [...videosNormales, videoPublicitario]
+            : videosNormales;
+
+          console.log("Videos cargados:", videos);
+          console.log(
+            "Video publicitario encontrado:",
+            videoPublicitario ? "Sí" : "No"
+          );
+
+          if (videos.length > 0) {
+            renderVideoList();
+            loadVideo(0);
+            loading.style.display = "none";
+          } else {
+            loading.innerHTML = `
+              <div>No hay videos con formato válido</div>
+              <div style="margin-top: 10px; font-size: 14px;">
+                Formatos soportados: mp4, webm, ogg
+              </div>
+            `;
+            videoTitle.textContent = "No hay videos compatibles";
+          }
+        } catch (error) {
+          console.error("Error cargando videos:", error);
+          videoTitle.textContent = "Error de conexión";
+          loading.innerHTML = `
+            <div>Error de conexión</div>
+            <div style="margin-top: 10px; font-size: 14px;">
+              ${error.message || "Verifica tu conexión a internet"}
+            </div>
+          `;
+        }
+      }
+
+      // Renderizar lista con estilo especial para publicidad
+      function renderVideoList() {
+        videoList.innerHTML = "";
+        videos.forEach((video, index) => {
+          const item = document.createElement("div");
+          const isActive = index === currentVideoIndex;
+
+          item.className = `video-item ${isActive ? "active" : ""} ${
+            video.esPublicidad ? "publicidad" : ""
+          }`;
+
+          item.innerHTML = `
+            <div class="video-item-title">
+              ${video.name}
+              ${
+                video.esPublicidad
+                  ? '<span class="ad-badge">📢 Publicidad</span>'
+                  : ""
+              }
+            </div>
+          `;
+
+          item.addEventListener("click", () => {
+            loadVideo(index);
+            toggleSidebar();
+          });
+
+          videoList.appendChild(item);
+        });
+      }
+
+      function loadVideo(index) {
+        if (index < 0 || index >= videos.length) return;
+
+        currentVideoIndex = index;
+        const video = videos[index];
+
+        videoElement.pause();
+        videoElement.src = video.url;
+        videoElement.load();
+
+        videoTitle.textContent = video.esPublicidad
+          ? `📢 ${video.name}`
+          : video.name;
+
+        isPlaying = false;
+        playPauseBtn.textContent = "▶";
+
+        // ✅ MOSTRAR LA IMAGEN cuando se carga un nuevo video
+        if (posterImg) {
+          posterImg.setAttribute("animation", {
+            property: "scale",
+            from: "0 0 0",
+            to: "1 1 1",
+            dur: 500,
+            easing: "easeInOutQuad",
+          });
+        }
+
+        renderVideoList();
+      }
+
+      function togglePlayPause() {
+        if (isPlaying) {
+          // PAUSAR: Ocultar video y anillos → Mostrar imagen
+          videoElement.pause();
+          playPauseBtn.textContent = "▶";
+
+          // ✅ PRIMERO: Ocultar video y anillos (3000ms)
+          if (videoCircle) {
+            videoCircle.setAttribute("animation", {
+              property: "scale",
+              from: "1 1 1",
+              to: "0 0 0",
+              dur: 3000,
+              easing: "easeInOutQuad",
+            });
+          }
+
+          if (ringInner) {
+            ringInner.setAttribute("animation", {
+              property: "scale",
+              from: "1 1 1",
+              to: "0 0 0",
+              dur: 3000,
+              easing: "easeInOutQuad",
+            });
+          }
+
+          if (ringOuter) {
+            ringOuter.setAttribute("animation", {
+              property: "scale",
+              from: "1 1 1",
+              to: "0 0 0",
+              dur: 3000,
+              easing: "easeInOutQuad",
+            });
+          }
+          
+          if (ringInnerRed) {
+            ringInnerRed.setAttribute("animation", {
+              property: "scale",
+              from: "1 1 1",
+              to: "0 0 0",
+              dur: 3000,
+              easing: "easeInOutQuad",
+            });
+          }
+
+          if (ringOuterRed) {
+            ringOuterRed.setAttribute("animation", {
+              property: "scale",
+              from: "1 1 1",
+              to: "0 0 0",
+              dur: 3000,
+              easing: "easeInOutQuad",
+            });
+          }
+
+          // ✅ DESPUÉS: Mostrar imagen (espera 3000ms)
+          setTimeout(() => {
+            if (posterImg) {
+              posterImg.setAttribute("animation", {
+                property: "scale",
+                from: "0 0 0",
+                to: "1 1 1",
+                dur: 500,
+                easing: "easeInOutQuad",
+              });
+            }
+          }, 3000);
+
+          isPlaying = false;
+        } else {
+          // PLAY: Ocultar imagen → Mostrar video y anillos
+          
+          // ✅ PRIMERO: Ocultar imagen (500ms)
+          hidePoster();
+
+          // ✅ DESPUÉS: Mostrar video y anillos (espera 500ms)
+          setTimeout(() => {
+            videoElement.play();
+            playPauseBtn.textContent = "⏸";
+
+            if (videoCircle) {
+              videoCircle.setAttribute("animation", {
+                property: "scale",
+                from: "0 0 0",
+                to: "1 1 1",
+                dur: 3000,
+                easing: "easeInOutQuad",
+              });
+            }
+
+            if (ringInner) {
+              ringInner.setAttribute("animation", {
+                property: "scale",
+                from: "0 0 0",
+                to: "1 1 1",
+                dur: 3000,
+                easing: "easeInOutQuad",
+              });
+            }
+
+            if (ringOuter) {
+              ringOuter.setAttribute("animation", {
+                property: "scale",
+                from: "0 0 0",
+                to: "1 1 1",
+                dur: 3000,
+                easing: "easeInOutQuad",
+              });
+            }
+            
+            if (ringInnerRed) {
+              ringInnerRed.setAttribute("animation", {
+                property: "scale",
+                from: "0 0 0",
+                to: "1 1 1",
+                dur: 3000,
+                easing: "easeInOutQuad",
+              });
+            }
+
+            if (ringOuterRed) {
+              ringOuterRed.setAttribute("animation", {
+                property: "scale",
+                from: "0 0 0",
+                to: "1 1 1",
+                dur: 3000,
+                easing: "easeInOutQuad",
+              });
+            }
+
+            isPlaying = true;
+          }, 500);
+        }
+      }
+
+      videoElement.addEventListener("ended", function () {
+        // ✅ PRIMERO: Ocultar video y anillos (3000ms)
+        if (videoCircle) {
+          videoCircle.setAttribute("animation", {
+            property: "scale",
+            from: "1 1 1",
+            to: "0 0 0",
+            dur: 3000,
+            easing: "easeInOutQuad",
+          });
+        }
+
+        if (ringInner) {
+          ringInner.setAttribute("animation", {
+            property: "scale",
+            from: "1 1 1",
+            to: "0 0 0",
+            dur: 3000,
+            easing: "easeInOutQuad",
+          });
+        }
+
+        if (ringOuter) {
+          ringOuter.setAttribute("animation", {
+            property: "scale",
+            from: "1 1 1",
+            to: "0 0 0",
+            dur: 3000,
+            easing: "easeInOutQuad",
+          });
+        }
+        
+        if (ringInnerRed) {
+          ringInnerRed.setAttribute("animation", {
+            property: "scale",
+            from: "1 1 1",
+            to: "0 0 0",
+            dur: 3000,
+            easing: "easeInOutQuad",
+          });
+        }
+
+        if (ringOuterRed) {
+          ringOuterRed.setAttribute("animation", {
+            property: "scale",
+            from: "1 1 1",
+            to: "0 0 0",
+            dur: 3000,
+            easing: "easeInOutQuad",
+          });
+        }
+
+        // ✅ DESPUÉS: Mostrar imagen (espera 3000ms)
+        setTimeout(() => {
+          if (posterImg) {
+            posterImg.setAttribute("animation", {
+              property: "scale",
+              from: "0 0 0",
+              to: "1 1 1",
+              dur: 500,
+              easing: "easeInOutQuad",
+            });
+          }
+        }, 3000);
+
+        isPlaying = false;
+        playPauseBtn.textContent = "▶";
+        videoElement.currentTime = 0;
+      });
+
+      function toggleSidebar() {
+        sidebar.classList.toggle("open");
+        menuBtn.classList.toggle("active");
+      }
+
+      playPauseBtn.addEventListener("click", togglePlayPause);
+      menuBtn.addEventListener("click", toggleSidebar);
+
+      // Botón de reload
+      const reloadBtn = document.querySelector("#reload-btn");
+      reloadBtn.addEventListener("click", () => {
+        location.reload();
+      });
+
+      sceneEl.addEventListener("loaded", () => {
+        const arSystem = sceneEl.systems["mindar-image-system"];
+        arSystem.start();
+      });
+
+      window.addEventListener("load", () => {
+        console.log("Página cargada, iniciando carga de videos...");
+        loadVideos();
+      });
+    </script>
+  </body>
+</html>

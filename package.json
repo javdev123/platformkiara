@@ -1,0 +1,8 @@
+{
+  "name": "plataformakiara",
+  "version": "1.0.0",
+  "description": "App AR con Supabase Storage",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}
