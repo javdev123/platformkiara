@@ -690,14 +690,32 @@
           const userFolder = `${userEmail}/`;
           console.log("Buscando videos en carpeta:", userFolder);
 
-          const { data, error } = await supabaseClient.storage
+          // Primero intentamos listar en la carpeta del usuario
+          let { data, error } = await supabaseClient.storage
             .from("videos")
             .list(userFolder, {
               limit: 100,
               sortBy: { column: "name", order: "asc" },
             });
 
-          console.log("Respuesta de Supabase:", { data, error });
+          console.log("Respuesta de Supabase (carpeta usuario):", {
+            data,
+            error,
+          });
+
+          // Si no encuentra archivos, intentamos buscar en la raíz
+          if ((!data || data.length === 0) && !error) {
+            console.log("Intentando buscar en la raíz del bucket...");
+            const rootResult = await supabaseClient.storage
+              .from("videos")
+              .list("", {
+                limit: 100,
+                sortBy: { column: "name", order: "asc" },
+              });
+            console.log("Respuesta de Supabase (raíz):", rootResult);
+            data = rootResult.data;
+            error = rootResult.error;
+          }
 
           if (error) {
             console.error("Error al listar videos:", error);
@@ -708,22 +726,60 @@
 
           const videosUsuario = [];
           if (data && data.length > 0) {
-            console.log(`Se encontraron ${data.length} archivos`);
-            data.forEach((file) => {
-              console.log("Archivo encontrado:", file);
+            console.log(`Se encontraron ${data.length} archivos/carpetas`);
 
-              if (file.name && file.name.match(/\.(mp4|webm|ogg)$/i)) {
-                const videoUrl = supabaseClient.storage
-                  .from("videos")
-                  .getPublicUrl(`${userFolder}${file.name}`).data.publicUrl;
-                console.log("Video agregado:", file.name, videoUrl);
-                videosUsuario.push({
-                  name: file.name.replace(/\.[^/.]+$/, ""),
-                  url: videoUrl,
-                  esPublicidad: false,
+            // Buscar la carpeta del usuario
+            const userFolderItem = data.find((item) => item.name === userEmail);
+
+            if (userFolderItem && userFolderItem.id) {
+              console.log(
+                "Encontrada carpeta del usuario, listando su contenido..."
+              );
+              // Si encontramos la carpeta, listar su contenido
+              const { data: filesInFolder, error: folderError } =
+                await supabaseClient.storage.from("videos").list(userEmail, {
+                  limit: 100,
+                  sortBy: { column: "name", order: "asc" },
+                });
+
+              console.log("Archivos dentro de la carpeta:", {
+                filesInFolder,
+                folderError,
+              });
+
+              if (!folderError && filesInFolder) {
+                filesInFolder.forEach((file) => {
+                  console.log("Archivo encontrado:", file);
+                  if (file.name && file.name.match(/\.(mp4|webm|ogg)$/i)) {
+                    const videoUrl = supabaseClient.storage
+                      .from("videos")
+                      .getPublicUrl(`${userEmail}/${file.name}`).data.publicUrl;
+                    console.log("Video agregado:", file.name, videoUrl);
+                    videosUsuario.push({
+                      name: file.name.replace(/\.[^/.]+$/, ""),
+                      url: videoUrl,
+                      esPublicidad: false,
+                    });
+                  }
                 });
               }
-            });
+            } else {
+              // Si no es una carpeta, procesar archivos directamente
+              data.forEach((file) => {
+                console.log("Archivo encontrado:", file);
+                if (file.name && file.name.match(/\.(mp4|webm|ogg)$/i)) {
+                  const videoUrl = supabaseClient.storage
+                    .from("videos")
+                    .getPublicUrl(`${userFolder}${file.name}`).data.publicUrl;
+                  console.log("Video agregado:", file.name, videoUrl);
+                  videosUsuario.push({
+                    name: file.name.replace(/\.[^/.]+$/, ""),
+                    url: videoUrl,
+                    esPublicidad: false,
+                  });
+                }
+              });
+            }
           } else {
             console.log("No se encontraron archivos en la carpeta");
           }
