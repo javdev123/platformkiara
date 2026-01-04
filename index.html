@@ -688,31 +688,46 @@
       async function loadVideos() {
         try {
           const userFolder = `${userEmail}/`;
+          console.log("Buscando videos en carpeta:", userFolder);
+
           const { data, error } = await supabaseClient.storage
             .from("videos")
             .list(userFolder, {
               limit: 100,
               sortBy: { column: "name", order: "asc" },
             });
+
+          console.log("Respuesta de Supabase:", { data, error });
+
           if (error) {
+            console.error("Error al listar videos:", error);
             loading.innerHTML = `<div>Error: ${error.message}</div>`;
             videoTitle.textContent = "Error al cargar videos";
             return;
           }
+
           const videosUsuario = [];
           if (data && data.length > 0) {
+            console.log(`Se encontraron ${data.length} archivos`);
             data.forEach((file) => {
+              console.log("Archivo encontrado:", file);
+
               if (file.name && file.name.match(/\.(mp4|webm|ogg)$/i)) {
+                const videoUrl = supabaseClient.storage
+                  .from("videos")
+                  .getPublicUrl(`${userFolder}${file.name}`).data.publicUrl;
+                console.log("Video agregado:", file.name, videoUrl);
                 videosUsuario.push({
                   name: file.name.replace(/\.[^/.]+$/, ""),
-                  url: supabaseClient.storage
-                    .from("videos")
-                    .getPublicUrl(`${userFolder}${file.name}`).data.publicUrl,
+                  url: videoUrl,
                   esPublicidad: false,
                 });
               }
             });
+          } else {
+            console.log("No se encontraron archivos en la carpeta");
           }
+
           const { data: publicidadData } = await supabaseClient.storage
             .from("videos")
             .list("", { limit: 1, search: VIDEO_PUBLICITARIO });
