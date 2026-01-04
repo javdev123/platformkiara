@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
   <head>
@@ -139,9 +140,22 @@
       }
       #app-screen {
         display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
       }
       #app-screen.active {
         display: block;
+      }
+      a-scene {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        z-index: 0 !important;
       }
       #header {
         position: fixed;
@@ -149,7 +163,8 @@
         left: 0;
         right: 0;
         height: 60px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
+        backdrop-filter: blur(10px);
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -161,7 +176,7 @@
         position: fixed;
         top: 70px;
         left: 10px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
         border: 2px solid rgba(255, 255, 255, 0.5);
         color: white;
         padding: 10px 18px;
@@ -178,7 +193,7 @@
         z-index: 1000;
       }
       #reload-btn:hover {
-        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        background: linear-gradient(135deg, rgba(118, 75, 162, 0.9) 0%, rgba(102, 126, 234, 0.9) 100%);
         transform: scale(1.05);
         border-color: rgba(255, 255, 255, 0.8);
         box-shadow: 0 6px 18px rgba(102, 126, 234, 0.6);
@@ -187,7 +202,7 @@
         position: fixed;
         top: 70px;
         right: 10px;
-        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        background: linear-gradient(135deg, rgba(231, 76, 60, 0.9) 0%, rgba(192, 57, 43, 0.9) 100%);
         border: 2px solid rgba(255, 255, 255, 0.5);
         color: white;
         padding: 10px 18px;
@@ -199,11 +214,12 @@
         align-items: center;
         gap: 6px;
         transition: all 0.3s;
+        backdrop-filter: blur(10px);
         box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
         z-index: 1000;
       }
       #logout-btn:hover {
-        background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+        background: linear-gradient(135deg, rgba(192, 57, 43, 0.9) 0%, rgba(231, 76, 60, 0.9) 100%);
         transform: scale(1.05);
         box-shadow: 0 6px 18px rgba(231, 76, 60, 0.6);
       }
@@ -319,7 +335,7 @@
         width: 70px;
         height: 70px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
         border: none;
         color: white;
         font-size: 24px;
@@ -327,6 +343,7 @@
         box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         z-index: 1000;
         transition: transform 0.2s, box-shadow 0.2s;
+        backdrop-filter: blur(10px);
       }
       #play-pause-btn:hover {
         transform: translateX(-50%) scale(1.1);
@@ -389,22 +406,6 @@
       </div>
     </div>
     <div id="app-screen">
-      <div id="header">
-        <div id="video-title">Cargando...</div>
-        <button id="menu-btn">
-          <div class="menu-line"></div>
-          <div class="menu-line"></div>
-          <div class="menu-line"></div>
-        </button>
-      </div>
-      <button id="reload-btn"><span>🔄</span><span>Reload</span></button>
-      <button id="logout-btn"><span>🚪</span><span>Salir</span></button>
-      <div id="sidebar"><div id="video-list"></div></div>
-      <button id="play-pause-btn">▶</button>
-      <div id="loading">
-        <div class="loader"></div>
-        <div>Cargando videos...</div>
-      </div>
       <a-scene
         mindar-image="imageTargetSrc: capibara.mind; autoStart: false; filterMinCF: 0.0001; filterBeta: 0.01; uiScanning: none; uiLoading: no;"
         color-space="sRGB"
@@ -476,6 +477,22 @@
           ></a-circle>
         </a-entity>
       </a-scene>
+      <div id="header">
+        <div id="video-title">Cargando...</div>
+        <button id="menu-btn">
+          <div class="menu-line"></div>
+          <div class="menu-line"></div>
+          <div class="menu-line"></div>
+        </button>
+      </div>
+      <button id="reload-btn"><span>🔄</span><span>Reload</span></button>
+      <button id="logout-btn"><span>🚪</span><span>Salir</span></button>
+      <div id="sidebar"><div id="video-list"></div></div>
+      <button id="play-pause-btn">▶</button>
+      <div id="loading">
+        <div class="loader"></div>
+        <div>Cargando videos...</div>
+      </div>
     </div>
     <script>
       const SUPABASE_URL = "https://gjnekbzkminxdfqqvuyo.supabase.co";
@@ -689,21 +706,16 @@
         try {
           const userFolder = `${userEmail}/`;
           console.log("Buscando videos en carpeta:", userFolder);
-
-          // Primero intentamos listar en la carpeta del usuario
+          
           let { data, error } = await supabaseClient.storage
             .from("videos")
             .list(userFolder, {
               limit: 100,
               sortBy: { column: "name", order: "asc" },
             });
-
-          console.log("Respuesta de Supabase (carpeta usuario):", {
-            data,
-            error,
-          });
-
-          // Si no encuentra archivos, intentamos buscar en la raíz
+          
+          console.log("Respuesta de Supabase (carpeta usuario):", { data, error });
+          
           if ((!data || data.length === 0) && !error) {
             console.log("Intentando buscar en la raíz del bucket...");
             const rootResult = await supabaseClient.storage
@@ -716,37 +728,31 @@
             data = rootResult.data;
             error = rootResult.error;
           }
-
+          
           if (error) {
             console.error("Error al listar videos:", error);
             loading.innerHTML = `<div>Error: ${error.message}</div>`;
             videoTitle.textContent = "Error al cargar videos";
             return;
           }
-
+          
           const videosUsuario = [];
           if (data && data.length > 0) {
             console.log(`Se encontraron ${data.length} archivos/carpetas`);
-
-            // Buscar la carpeta del usuario
-            const userFolderItem = data.find((item) => item.name === userEmail);
-
+            
+            const userFolderItem = data.find(item => item.name === userEmail);
+            
             if (userFolderItem && userFolderItem.id) {
-              console.log(
-                "Encontrada carpeta del usuario, listando su contenido..."
-              );
-              // Si encontramos la carpeta, listar su contenido
-              const { data: filesInFolder, error: folderError } =
-                await supabaseClient.storage.from("videos").list(userEmail, {
+              console.log("Encontrada carpeta del usuario, listando su contenido...");
+              const { data: filesInFolder, error: folderError } = await supabaseClient.storage
+                .from("videos")
+                .list(userEmail, {
                   limit: 100,
                   sortBy: { column: "name", order: "asc" },
                 });
-
-              console.log("Archivos dentro de la carpeta:", {
-                filesInFolder,
-                folderError,
-              });
-
+              
+              console.log("Archivos dentro de la carpeta:", { filesInFolder, folderError });
+              
               if (!folderError && filesInFolder) {
                 filesInFolder.forEach((file) => {
                   console.log("Archivo encontrado:", file);
@@ -764,7 +770,6 @@
                 });
               }
             } else {
-              // Si no es una carpeta, procesar archivos directamente
               data.forEach((file) => {
                 console.log("Archivo encontrado:", file);
                 if (file.name && file.name.match(/\.(mp4|webm|ogg)$/i)) {
