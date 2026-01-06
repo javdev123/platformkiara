@@ -448,7 +448,7 @@
             scale="0 0 0"
             material="color: #FFD700; opacity: 0.6; side: double; transparent: true"
           ></a-ring>
-          <a-ring
+          <!-- <a-ring
             id="ring-outer-red"
             radius-inner="0.9"
             radius-outer="1.1"
@@ -465,7 +465,7 @@
             rotation="0 0 0"
             scale="0 0 0"
             material="color: #00FF00; opacity: 0.6; side: double; transparent: true"
-          ></a-ring>
+          ></a-ring> -->
           <a-circle
             id="video-circle"
             src="#ar-video"
@@ -525,8 +525,8 @@
       let posterImg = null;
       let ringInner = null;
       let ringOuter = null;
-      let ringInnerRed = null;
-      let ringOuterRed = null;
+      // let ringInnerRed = null;
+      // let ringOuterRed = null;
       let markerDetected = false;
       function checkSession() {
         const session = localStorage.getItem(SESSION_KEY);
@@ -665,8 +665,8 @@
           posterImg = document.querySelector("#poster-img");
           ringInner = document.querySelector("#ring-inner");
           ringOuter = document.querySelector("#ring-outer");
-          ringInnerRed = document.querySelector("#ring-inner-red");
-          ringOuterRed = document.querySelector("#ring-outer-red");
+          // ringInnerRed = document.querySelector("#ring-inner-red");
+          // ringOuterRed = document.querySelector("#ring-outer-red");
           const target = document.querySelector("[mindar-image-target]");
           target.addEventListener("targetFound", () => {
             markerDetected = true;
@@ -886,22 +886,22 @@
               dur: 3000,
               easing: "easeInOutQuad",
             });
-          if (ringInnerRed)
-            ringInnerRed.setAttribute("animation", {
-              property: "scale",
-              from: "1 1 1",
-              to: "0 0 0",
-              dur: 3000,
-              easing: "easeInOutQuad",
-            });
-          if (ringOuterRed)
-            ringOuterRed.setAttribute("animation", {
-              property: "scale",
-              from: "1 1 1",
-              to: "0 0 0",
-              dur: 3000,
-              easing: "easeInOutQuad",
-            });
+          // if (ringInnerRed)
+          //   ringInnerRed.setAttribute("animation", {
+          //     property: "scale",
+          //     from: "1 1 1",
+          //     to: "0 0 0",
+          //     dur: 3000,
+          //     easing: "easeInOutQuad",
+          //   });
+          // if (ringOuterRed)
+          //   ringOuterRed.setAttribute("animation", {
+          //     property: "scale",
+          //     from: "1 1 1",
+          //     to: "0 0 0",
+          //     dur: 3000,
+          //     easing: "easeInOutQuad",
+          //   });
           setTimeout(() => {
             if (posterImg)
               posterImg.setAttribute("animation", {
@@ -942,22 +942,22 @@
                 dur: 3000,
                 easing: "easeInOutQuad",
               });
-            if (ringInnerRed)
-              ringInnerRed.setAttribute("animation", {
-                property: "scale",
-                from: "0 0 0",
-                to: "1 1 1",
-                dur: 3000,
-                easing: "easeInOutQuad",
-              });
-            if (ringOuterRed)
-              ringOuterRed.setAttribute("animation", {
-                property: "scale",
-                from: "0 0 0",
-                to: "1 1 1",
-                dur: 3000,
-                easing: "easeInOutQuad",
-              });
+            // if (ringInnerRed)
+            //   ringInnerRed.setAttribute("animation", {
+            //     property: "scale",
+            //     from: "0 0 0",
+            //     to: "1 1 1",
+            //     dur: 3000,
+            //     easing: "easeInOutQuad",
+            //   });
+            // if (ringOuterRed)
+            //   ringOuterRed.setAttribute("animation", {
+            //     property: "scale",
+            //     from: "0 0 0",
+            //     to: "1 1 1",
+            //     dur: 3000,
+            //     easing: "easeInOutQuad",
+            //   });
             isPlaying = true;
           }, 500);
         }
@@ -987,22 +987,22 @@
             dur: 3000,
             easing: "easeInOutQuad",
           });
-        if (ringInnerRed)
-          ringInnerRed.setAttribute("animation", {
-            property: "scale",
-            from: "1 1 1",
-            to: "0 0 0",
-            dur: 3000,
-            easing: "easeInOutQuad",
-          });
-        if (ringOuterRed)
-          ringOuterRed.setAttribute("animation", {
-            property: "scale",
-            from: "1 1 1",
-            to: "0 0 0",
-            dur: 3000,
-            easing: "easeInOutQuad",
-          });
+        // if (ringInnerRed)
+        //   ringInnerRed.setAttribute("animation", {
+        //     property: "scale",
+        //     from: "1 1 1",
+        //     to: "0 0 0",
+        //     dur: 3000,
+        //     easing: "easeInOutQuad",
+        //   });
+        // if (ringOuterRed)
+        //   ringOuterRed.setAttribute("animation", {
+        //     property: "scale",
+        //     from: "1 1 1",
+        //     to: "0 0 0",
+        //     dur: 3000,
+        //     easing: "easeInOutQuad",
+        //   });
         setTimeout(() => {
           if (posterImg)
             posterImg.setAttribute("animation", {
