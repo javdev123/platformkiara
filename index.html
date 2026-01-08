@@ -280,14 +280,17 @@
       #menu-btn.active .menu-line:nth-child(3) {
         transform: rotate(-45deg) translate(6px, -6px);
       }
-      #sidebar {
+#sidebar {
         position: fixed;
         top: 60px;
         right: -200px;
         width: 200px;
         height: calc(100vh - 60px);
-        background: white;
-        box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-left: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: -2px 0 20px rgba(0, 0, 0, 0.2);
         transition: right 0.3s ease;
         z-index: 999;
         overflow-y: auto;
