@@ -1,0 +1,29 @@
+# Variables de entorno locales
+.env
+.env.local
+.env.production
+
+# Node modules (si usas npm)
+node_modules/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de log
+*.log
+npm-debug.log*
+
+# Carpetas de build
+dist/
+build/
+.netlify/
+
+# Archivos de IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local Netlify folder
+.netlify
