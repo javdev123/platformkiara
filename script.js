@@ -1,10 +1,18 @@
-// Variables globales que se cargarán desde Netlify Functions
-let SUPABASE_URL;
-let SUPABASE_KEY;
-let VIDEO_PUBLICITARIO;
-let SESSION_KEY;
-let SESSION_DURATION;
-let supabaseClient;
+// Configuración - Cámbiala directamente aquí para deploy rápido
+const CONFIG = {
+  SUPABASE_URL: "https://gjnekbzkminxdfqqvuyo.supabase.co",
+  SUPABASE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqbmVrYnprbWlueGRmcXF2dXlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwMzU3MzAsImV4cCI6MjA4MjYxMTczMH0._5OT0vM6NAClqC0o1AbSdOkd_t63Pm8EQmcj_LnA1BY",
+  VIDEO_PUBLICITARIO: "publicidad.mp4",
+  SESSION_KEY: "ar_session",
+  SESSION_DURATION: 24 * 60 * 60 * 1000
+};
+
+const SUPABASE_URL = CONFIG.SUPABASE_URL;
+const SUPABASE_KEY = CONFIG.SUPABASE_KEY;
+const VIDEO_PUBLICITARIO = CONFIG.VIDEO_PUBLICITARIO;
+const SESSION_KEY = CONFIG.SESSION_KEY;
+const SESSION_DURATION = CONFIG.SESSION_DURATION;
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let userEmail = null;
 let productCode = null;
@@ -32,32 +40,6 @@ let posterImg = null;
 let ringInner = null;
 let ringOuter = null;
 let markerDetected = false;
-
-// Cargar configuración al inicio
-async function loadConfig() {
-  try {
-    const response = await fetch('/.netlify/functions/get-config');
-    if (!response.ok) {
-      throw new Error('Failed to load configuration');
-    }
-    const config = await response.json();
-    
-    SUPABASE_URL = config.SUPABASE_URL;
-    SUPABASE_KEY = config.SUPABASE_KEY;
-    VIDEO_PUBLICITARIO = config.VIDEO_PUBLICITARIO;
-    SESSION_KEY = config.SESSION_KEY;
-    SESSION_DURATION = config.SESSION_DURATION;
-    
-    // Inicializar cliente de Supabase
-    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    
-    return true;
-  } catch (error) {
-    console.error("❌ Error loading configuration:", error);
-    alert("Error de configuración. No se pudo conectar al servidor.");
-    return false;
-  }
-}
 
 function checkSession() {
   const session = localStorage.getItem(SESSION_KEY);
@@ -533,14 +515,6 @@ reloadBtn.addEventListener("click", () => {
   location.reload();
 });
 
-// Inicializar la aplicación cargando primero la configuración
-(async function init() {
-  const configLoaded = await loadConfig();
-  if (!configLoaded) {
-    return; // No continuar si falla la configuración
-  }
-  
-  if (!checkSession()) {
-    authScreen.classList.remove("hidden");
-  }
-})();
+if (!checkSession()) {
+  authScreen.classList.remove("hidden");
+}
