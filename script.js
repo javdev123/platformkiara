@@ -1,10 +1,9 @@
-// Variables globales que se cargarán desde Netlify Functions
-let SUPABASE_URL;
-let SUPABASE_KEY;
-let VIDEO_PUBLICITARIO;
-let SESSION_KEY;
-let SESSION_DURATION;
-let supabaseClient;
+const SUPABASE_URL = "https://gjnekbzkminxdfqqvuyo.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqbmVrYnprbWlueGRmcXF2dXlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwMzU3MzAsImV4cCI6MjA4MjYxMTczMH0._5OT0vM6NAClqC0o1AbSdOkd_t63Pm8EQmcj_LnA1BY";
+const VIDEO_PUBLICITARIO = "publicidad.mp4";
+const SESSION_KEY = "ar_session";
+const SESSION_DURATION = 24 * 60 * 60 * 1000;
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let userEmail = null;
 let productCode = null;
@@ -32,32 +31,6 @@ let posterImg = null;
 let ringInner = null;
 let ringOuter = null;
 let markerDetected = false;
-
-// Cargar configuración al inicio
-async function loadConfig() {
-  try {
-    const response = await fetch('/.netlify/functions/get-config');
-    if (!response.ok) {
-      throw new Error('Failed to load configuration');
-    }
-    const config = await response.json();
-    
-    SUPABASE_URL = config.SUPABASE_URL;
-    SUPABASE_KEY = config.SUPABASE_KEY;
-    VIDEO_PUBLICITARIO = config.VIDEO_PUBLICITARIO;
-    SESSION_KEY = config.SESSION_KEY;
-    SESSION_DURATION = config.SESSION_DURATION;
-    
-    // Inicializar cliente de Supabase
-    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    
-    return true;
-  } catch (error) {
-    console.error("❌ Error loading configuration:", error);
-    alert("Error de configuración. No se pudo conectar al servidor.");
-    return false;
-  }
-}
 
 function checkSession() {
   const session = localStorage.getItem(SESSION_KEY);
@@ -245,19 +218,13 @@ async function loadVideos() {
     const userFolder = `${userEmail}/`;
     console.log("Buscando videos en carpeta:", userFolder);
 
-    // Cargar videos del usuario y publicidad en paralelo
-    const [userVideosResult, publicidadResult] = await Promise.all([
-      supabaseClient.storage.from("videos").list(userFolder, {
+    let { data, error } = await supabaseClient.storage
+      .from("videos")
+      .list(userFolder, {
         limit: 100,
         sortBy: { column: "name", order: "asc" },
-      }),
-      supabaseClient.storage.from("videos").list("", { 
-        limit: 1, 
-        search: VIDEO_PUBLICITARIO 
-      })
-    ]);
+      });
 
-    let { data, error } = userVideosResult;
     console.log("Respuesta de Supabase (carpeta usuario):", { data, error });
 
     if ((!data || data.length === 0) && !error) {
@@ -335,8 +302,10 @@ async function loadVideos() {
       console.log("No se encontraron archivos en la carpeta");
     }
 
-    // Agregar publicidad si existe (ya cargada en paralelo)
-    if (publicidadResult.data && publicidadResult.data.length > 0) {
+    const { data: publicidadData } = await supabaseClient.storage
+      .from("videos")
+      .list("", { limit: 1, search: VIDEO_PUBLICITARIO });
+    if (publicidadData && publicidadData.length > 0) {
       videosUsuario.push({
         name: VIDEO_PUBLICITARIO.replace(/\.[^/.]+$/, ""),
         url: supabaseClient.storage
@@ -345,7 +314,6 @@ async function loadVideos() {
         esPublicidad: true,
       });
     }
-
     videos = videosUsuario;
     if (videos.length > 0) {
       renderVideoList();
@@ -533,14 +501,6 @@ reloadBtn.addEventListener("click", () => {
   location.reload();
 });
 
-// Inicializar la aplicación cargando primero la configuración
-(async function init() {
-  const configLoaded = await loadConfig();
-  if (!configLoaded) {
-    return; // No continuar si falla la configuración
-  }
-  
-  if (!checkSession()) {
-    authScreen.classList.remove("hidden");
-  }
-})();
+if (!checkSession()) {
+  authScreen.classList.remove("hidden");
+}
